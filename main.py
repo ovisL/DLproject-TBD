@@ -21,6 +21,7 @@ model = tf.keras.models.load_model(model_path)
 
 image_h = 512
 image_w = 512
+radius = int(image_h * 0.005)
 num_landmarks = 106
 
 image_path = 'test.jpg'
@@ -37,15 +38,22 @@ pred = model.predict(image, verbose=0)[0]
 # pred = pred
 pred = pred.astype(np.float32)
 
-# landmarks = []
-# for i in range(0, len(landmarks), 2):
-#     x, y = landmarks[i], landmarks[i+1]
-#     landmarks.append([x,y])
+landmarks = []
+for i in range(0, len(pred), 2):
+    x, y = pred[i]*image_w, pred[i+1]*image_h
+    landmarks.append([int(x),int(y)])
 
 
 print(pred)
 print(len(pred))
+print(landmarks)
+# pred_landmarks = plot_lankmarks(image_x, pred)
 
-pred_landmarks = plot_lankmarks(image_x, pred)
-cv2.imshow('pred',pred_landmarks)
-cv2.waitKey(0)
+for i, lanmark in enumerate(landmarks) :
+    print(i+1)
+    image_x = cv2.circle(image_x, lanmark, radius, (255, 0, 0), -1)
+    cv2.imshow('pred',image_x)
+    cv2.waitKey(0)
+
+# cv2.imshow('pred',pred_landmarks)
+# cv2.waitKey(0)
