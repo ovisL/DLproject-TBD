@@ -27,8 +27,8 @@ num_landmarks = 106
 image_path = 'image/test0.jpg'
 
 image = cv2.imread(image_path, cv2.IMREAD_COLOR)
-image_x = image
 image = cv2.resize(image, (image_w, image_h))
+image_x = image
 image = image/255.0 ## (512, 512, 3)
 image = np.expand_dims(image, axis=0) ## (1, 512, 512, 3)
 image = image.astype(np.float32)
@@ -53,9 +53,10 @@ print(landmarks)
 for lanmark in landmarks[51:66] :
     # print(i+1)
     image_x = cv2.circle(image_x, lanmark, radius, (255, 0, 0), -1)
-# cv2.imshow('pred',image_x)
-cv2.imwrite('a.png',image_x)
-cv2.waitKey(0)
+    cv2.imshow('pred',image_x)
+    cv2.waitKey(0)
+# cv2.imwrite('a.png',image_x)
+# cv2.waitKey(0)
 
 # cv2.imshow('pred',pred_landmarks)
 # cv2.waitKey(0)
