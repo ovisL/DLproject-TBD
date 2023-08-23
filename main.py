@@ -24,11 +24,11 @@ image_w = 512
 radius = int(image_h * 0.005)
 num_landmarks = 106
 
-image_path = 'test.jpg'
+image_path = 'image/test0.jpg'
 
 image = cv2.imread(image_path, cv2.IMREAD_COLOR)
-image = cv2.resize(image, (image_w, image_h))
 image_x = image
+image = cv2.resize(image, (image_w, image_h))
 image = image/255.0 ## (512, 512, 3)
 image = np.expand_dims(image, axis=0) ## (1, 512, 512, 3)
 image = image.astype(np.float32)
@@ -38,6 +38,7 @@ pred = model.predict(image, verbose=0)[0]
 # pred = pred
 pred = pred.astype(np.float32)
 
+image_h, image_w, _ = image_x.shape
 landmarks = []
 for i in range(0, len(pred), 2):
     x, y = pred[i]*image_w, pred[i+1]*image_h
@@ -49,11 +50,12 @@ print(len(pred))
 print(landmarks)
 # pred_landmarks = plot_lankmarks(image_x, pred)
 
-for i, lanmark in enumerate(landmarks) :
-    print(i+1)
+for lanmark in landmarks[51:66] :
+    # print(i+1)
     image_x = cv2.circle(image_x, lanmark, radius, (255, 0, 0), -1)
-    cv2.imshow('pred',image_x)
-    cv2.waitKey(0)
+# cv2.imshow('pred',image_x)
+cv2.imwrite('a.png',image_x)
+cv2.waitKey(0)
 
 # cv2.imshow('pred',pred_landmarks)
 # cv2.waitKey(0)
