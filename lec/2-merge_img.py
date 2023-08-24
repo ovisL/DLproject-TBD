@@ -27,14 +27,15 @@ def mergeImage(img_bg, img_fg,x,y) :
 
     img_fg = cv2.cvtColor(img_fg, cv2.COLOR_BGRA2BGR)
     h, w = img_fg.shape[:2]
-    roi = img_bg[y:y+h, x:x+w ]
+    roi = img_bg[y:y+h, x:x+w]
 
     masked_fg = cv2.bitwise_and(img_fg, img_fg, mask=mask)
     masked_bg = cv2.bitwise_and(roi, roi, mask=mask_inv)
 
     added = masked_fg + masked_bg
-    img_bg[y:y+h, x:x+w ] = added
+    img_bg[y:y+h, x:x+w] = added
     return img_bg
+
 
 model_path = 'model.h5'
 model = tf.keras.models.load_model(model_path)
@@ -42,7 +43,7 @@ model = tf.keras.models.load_model(model_path)
 h, w = 512, 512
 num_landmarks = 106
 
-image_path = 'test_image/test6.jpg'
+image_path = 'test_image/test4.jpg'
 
 image_origin = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
@@ -65,13 +66,41 @@ buri = cv2.imread(buri_path,  cv2.IMREAD_UNCHANGED)
 ratio = (((landmarks[64][0]-landmarks[57][0])**2 + (landmarks[64][1]-landmarks[57][1])**2)**(1/2))/buri.shape[1]*1.1
 theta = math.atan((landmarks[54][1]-landmarks[51][1])/(landmarks[54][0]-landmarks[51][0]))
 
+print(theta)
+
 buri = cv2.resize(buri, (int(buri.shape[1]*ratio), int(buri.shape[0]*ratio)))
+cv2.imwrite('buri_resized.png',buri)
 
 buri_pil = Image.fromarray(buri)
 buri_rotated = buri_pil.rotate(theta, expand=1)
-
 buri_rotated = np.array(buri_rotated)
-buri_coord_x, buri_coord_y = int(landmarks[52][0]-(buri.shape[1]*math.sin(theta)/2)), int(landmarks[52][1]-(buri.shape[1]*math.cos(theta)/2))
+# print(buri_rotated.shape)
 
-img_merged = mergeImage(image_origin, buri_rotated, buri_coord_x, buri_coord_y)
+buri_mask = buri_rotated[:,:,3]
+buri_mask_h, buri_mask_w = buri_mask.shape
+buri_crop_x = []
+buri_crop_y = []
+for i in range(buri_mask_w) :
+    for j in range(buri_mask_h) :
+        if buri_mask[j][i] != 0:
+            buri_crop_x.append(i) 
+            buri_crop_y.append(j)    
+buri_crop_x.sort()
+buri_crop_y.sort()
+
+buri_rotated = buri_rotated[buri_crop_y[0]:,buri_crop_x[0]:] 
+
+
+cv2.imwrite('buri_rotated.png',buri_rotated)
+
+# buri_coord_x, buri_coord_y = int(landmarks[52][0]-(buri.shape[1]*math.cos(theta)/2)), int(landmarks[52][1]-(buri.shape[1]*math.sin(theta)/2))
+buri_coord_x, buri_coord_y = landmarks[52][0], landmarks[52][1]
+image_origin = cv2.circle(image_origin, landmarks[52], 15, (0, 255, 0), -1)
+image_origin = cv2.circle(image_origin, (buri_coord_x-int(buri.shape[1]*math.cos(theta)/2), buri_coord_y-int(buri.shape[1]*math.sin(theta)/2)), 15, (0, 255, 0), -1)
+print(buri_coord_x, buri_coord_y)
+print(buri.shape[1])
+print(buri_coord_x-int(buri.shape[1]*math.cos(theta)/2), buri_coord_y-int(buri.shape[1]*math.sin(theta)/2))
+
+cv2.imwrite('origin.jpg',image_origin)
+img_merged = mergeImage(image_origin, buri_rotated, buri_coord_x-int(buri.shape[1]/2), buri_coord_y-int(buri.shape[1]/2))
 cv2.imwrite('test_image//img_merged.jpg',img_merged)
