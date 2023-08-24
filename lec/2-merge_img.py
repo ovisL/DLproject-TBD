@@ -21,6 +21,26 @@ def drawLanmarks(img, landmarks) :
         img = cv2.circle(img, lanmark, radius, (255, 0, 0), -1)
     return img
 
+def rotateImage(img, theta) :
+    img_pil = Image.fromarray(img)
+    img_rotated = img_pil.rotate(theta, expand=1)
+    img_rotated = np.array(img_rotated)
+
+    mask = img_rotated[:,:,3]
+    mask_h, mask_w = mask.shape
+    crop_x = []
+    crop_y = []
+    for i in range(mask_w) :
+        for j in range(mask_h) :
+            if mask[j][i] != 0:
+                crop_x.append(i) 
+                crop_y.append(j)    
+    crop_x.sort()
+    crop_y.sort()
+
+    img_rotated = img_rotated[crop_y[0]:,crop_x[0]:] 
+    return img_rotated
+    
 def mergeImage(img_bg, img_fg,x,y) :
     _, mask = cv2.threshold(img_fg[:,:,3], 1, 255, cv2.THRESH_BINARY)
     mask_inv = cv2.bitwise_not(mask)
@@ -57,7 +77,7 @@ pred = pred.astype(np.float32)
 
 landmarks = returnLankmarks(image_origin, pred)
 
-image_landmark = drawLanmarks(image_origin, landmarks[51:66])
+# image_landmark = drawLanmarks(image_origin, landmarks[51:66])
 # nose range : 51:66
 
 buri_path = 'image/buri.png'
@@ -66,41 +86,11 @@ buri = cv2.imread(buri_path,  cv2.IMREAD_UNCHANGED)
 ratio = (((landmarks[64][0]-landmarks[57][0])**2 + (landmarks[64][1]-landmarks[57][1])**2)**(1/2))/buri.shape[1]*1.1
 theta = math.atan((landmarks[54][1]-landmarks[51][1])/(landmarks[54][0]-landmarks[51][0]))
 
-print(theta)
 
 buri = cv2.resize(buri, (int(buri.shape[1]*ratio), int(buri.shape[0]*ratio)))
-cv2.imwrite('buri_resized.png',buri)
+buri_rotated = rotateImage(buri, theta)
 
-buri_pil = Image.fromarray(buri)
-buri_rotated = buri_pil.rotate(theta, expand=1)
-buri_rotated = np.array(buri_rotated)
-# print(buri_rotated.shape)
+buri_coord_x, buri_coord_y = int(landmarks[52][0]-(buri.shape[1]*math.sin(theta)/2)), int(landmarks[52][1]-(buri.shape[1]*math.cos(theta)/2))
 
-buri_mask = buri_rotated[:,:,3]
-buri_mask_h, buri_mask_w = buri_mask.shape
-buri_crop_x = []
-buri_crop_y = []
-for i in range(buri_mask_w) :
-    for j in range(buri_mask_h) :
-        if buri_mask[j][i] != 0:
-            buri_crop_x.append(i) 
-            buri_crop_y.append(j)    
-buri_crop_x.sort()
-buri_crop_y.sort()
-
-buri_rotated = buri_rotated[buri_crop_y[0]:,buri_crop_x[0]:] 
-
-
-cv2.imwrite('buri_rotated.png',buri_rotated)
-
-# buri_coord_x, buri_coord_y = int(landmarks[52][0]-(buri.shape[1]*math.cos(theta)/2)), int(landmarks[52][1]-(buri.shape[1]*math.sin(theta)/2))
-buri_coord_x, buri_coord_y = landmarks[52][0], landmarks[52][1]
-image_origin = cv2.circle(image_origin, landmarks[52], 15, (0, 255, 0), -1)
-image_origin = cv2.circle(image_origin, (buri_coord_x-int(buri.shape[1]*math.cos(theta)/2), buri_coord_y-int(buri.shape[1]*math.sin(theta)/2)), 15, (0, 255, 0), -1)
-print(buri_coord_x, buri_coord_y)
-print(buri.shape[1])
-print(buri_coord_x-int(buri.shape[1]*math.cos(theta)/2), buri_coord_y-int(buri.shape[1]*math.sin(theta)/2))
-
-cv2.imwrite('origin.jpg',image_origin)
-img_merged = mergeImage(image_origin, buri_rotated, buri_coord_x-int(buri.shape[1]/2), buri_coord_y-int(buri.shape[1]/2))
+img_merged = mergeImage(image_origin, buri_rotated, buri_coord_x, buri_coord_y)
 cv2.imwrite('test_image//img_merged.jpg',img_merged)
